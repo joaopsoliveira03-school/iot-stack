@@ -1,0 +1,67 @@
+services:
+  mosquitto:
+    image: eclipse-mosquitto:2
+    container_name: mosquitto
+    restart: unless-stopped
+    ports:
+      - 1883:1883  # MQTT default port
+      - 9001:9001  # WebSocket
+    volumes:
+      - ./mosquitto/config:/mosquitto/config
+      - ./mosquitto/data:/mosquitto/data
+      - ./mosquitto/log:/mosquitto/log
+    networks:
+      - iot_net
+
+  node-red:
+    image: nodered/node-red:latest
+    container_name: node-red
+    restart: unless-stopped
+    ports:
+      - "1880:1880"
+    environment:
+      - TZ=Europe/Lisbon
+      - NODE_RED_ENABLE_PROJECTS=true
+    volumes:
+      - ./node-red/data:/data
+    networks:
+      - iot_net
+    depends_on:
+      - mosquitto
+
+  cratedb:
+    image: crate:latest
+    container_name: cratedb
+    restart: unless-stopped
+    ports:
+      - 4200:4200  # Admin UI
+      - 5432:5432  # Postgres interface
+      - 4300:4300  # Transport protocol
+    environment:
+      - CRATE_HEAP_SIZE=1g
+    command: -Cdiscovery.type=single-node
+    volumes:
+      - ./cratedb/data:/data
+    networks:
+      - iot_net
+
+  grafana:
+    image: grafana/grafana-enterprise:latest
+    container_name: grafana
+    restart: unless-stopped
+    ports:
+      - 3000:3000
+    environment:
+      - GF_INSTALL_PLUGINS=grafana-clock-panel
+    volumes:
+      - ./grafana/data:/var/lib/grafana
+      - ./grafana/provisioning:/etc/grafana/provisioning
+    networks:
+      - iot_net
+    depends_on:
+      - cratedb
+
+networks:
+  iot_net:
+    driver: bridge
+
