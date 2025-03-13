@@ -10,6 +10,10 @@ services:
       - ./mosquitto/config:/mosquitto/config
       - ./mosquitto/data:/mosquitto/data
       - ./mosquitto/log:/mosquitto/log
+    environment:
+      - TZ=Europe/Lisbon
+      - NODE_RED_ENABLE_SAFE_MODE=false
+      - NODE_RED_ENABLE_PROJECTS=true
     networks:
       - iot_net
 
@@ -28,6 +32,24 @@ services:
       - iot_net
     depends_on:
       - mosquitto
+
+  n8n:
+    image: docker.n8n.io/n8nio/n8n
+    container_name: n8n
+    restart: always
+    ports:
+      - "5678:5678"
+    environment:
+      - N8N_HOST=localhost
+      - N8N_PORT=5678
+      - N8N_PROTOCOL=https
+      - NODE_ENV=production
+      - WEBHOOK_URL=https://localhost/
+      - GENERIC_TIMEZONE=Europe/Lisbon
+    volumes:
+      - ./n8n/:/home/node/.n8n
+    networks:
+      - iot_net
 
   cratedb:
     image: crate:latest
