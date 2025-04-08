@@ -83,7 +83,36 @@ services:
     depends_on:
       - cratedb
 
+  odoo:
+    image: odoo
+    depends_on:
+      odoo-db:
+        condition: service_healthy
+    ports:
+      - "8069:8069"
+    volumes:
+      - ./odoo/extra-addons:/mnt/extra-addons
+      - ./odoo/etc:/etc/odoo
+    networks:
+      - iot_net
+
+  odoo-db:
+    image: postgres
+    container_name: db
+    environment:
+      - POSTGRES_USER=odoo
+      - POSTGRES_PASSWORD=odoo
+      - POSTGRES_DB=postgres
+    volumes:
+      - ./odoo/data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD", "pg_isready", "-q", "-d", "postgres", "-U", "odoo"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - iot_net
+
 networks:
   iot_net:
     driver: bridge
-

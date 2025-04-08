@@ -2,5 +2,6 @@ node-red/
 grafana/
 cratedb/
 n8n/
+odoo/
 .venv/
 .vscode/
