@@ -1,0 +1,507 @@
+[
+    {
+        "id": "30867e3798952f1b",
+        "type": "tab",
+        "label": "Flow Odoo Melhorado",
+        "disabled": false,
+        "info": "",
+        "env": []
+    },
+    {
+        "id": "1d6d0a73b74715c9",
+        "type": "http request",
+        "z": "30867e3798952f1b",
+        "name": "Post login",
+        "method": "POST",
+        "ret": "txt",
+        "paytoqs": "body",
+        "url": "odoo:8069/xmlrpc/2/common",
+        "tls": "",
+        "persist": false,
+        "proxy": "",
+        "insecureHTTPParser": false,
+        "authType": "",
+        "senderr": false,
+        "headers": [],
+        "x": 600,
+        "y": 320,
+        "wires": [
+            [
+                "16577223ed5a6737"
+            ]
+        ]
+    },
+    {
+        "id": "4cbb5d3584946145",
+        "type": "function",
+        "z": "30867e3798952f1b",
+        "name": "Login",
+        "func": "// Define configuration\nflow.set(\"ODOO_DB\", \"odoo\");\nflow.set(\"ODOO_USERNAME\", \"email\");\nflow.set(\"ODOO_PASSWORD\", \"password\");\n\n\nmsg.headers = {};\nmsg.headers['Content-Type'] = 'application/xml'; // Definindo o cabeçalho como XML\n\n// Definindo o corpo da requisição em formato XML\nmsg.payload = `\n    <methodCall>\n        <methodName>login</methodName>\n        <params>\n            <param>\n                <value><string>${flow.get(\"ODOO_DB\")}</string></value>\n            </param>\n            <param>\n                <value><string>${flow.get(\"ODOO_USERNAME\")}</string></value>\n            </param>\n            <param>\n                <value><string>${flow.get(\"ODOO_PASSWORD\")}</string></value>\n            </param>\n        </params>\n    </methodCall>\n`;\nreturn msg;",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 390,
+        "y": 320,
+        "wires": [
+            [
+                "1d6d0a73b74715c9"
+            ]
+        ]
+    },
+    {
+        "id": "1042653019c46d72",
+        "type": "inject",
+        "z": "30867e3798952f1b",
+        "name": "Good post. accept XML",
+        "props": [
+            {
+                "p": "payload"
+            },
+            {
+                "p": "headers['Accept']",
+                "v": "text/xml",
+                "vt": "str"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "",
+        "payload": "{}",
+        "payloadType": "json",
+        "x": 160,
+        "y": 320,
+        "wires": [
+            [
+                "4cbb5d3584946145"
+            ]
+        ]
+    },
+    {
+        "id": "a7d6d25c079d5160",
+        "type": "function",
+        "z": "30867e3798952f1b",
+        "name": "Filter WO ready",
+        "func": "const ODOO_DB = flow.get(\"ODOO_DB\");\nconst ODOO_UID = flow.get(\"ODOO_UID\");\nconst ODOO_PASSWORD = flow.get(\"ODOO_PASSWORD\");\n\nmsg.payload = `<methodCall>\n    <methodName>execute_kw</methodName>\n        <params>\n            <param>\n                <value>\n                    <string>${ODOO_DB}</string>\n                </value>\n            </param>\n            <param>\n                <value>\n                    <int>${ODOO_UID}</int>\n                </value>\n            </param>\n            <param>\n                <value>\n                    <string>${ODOO_PASSWORD}</string>\n                </value>\n            </param>\n            <param>\n                <value>\n                    <string>mrp.workorder</string>\n                </value>\n            </param>\n            <param>\n                <value>\n                    <string>search_read</string>\n                </value>\n            </param>\n            <param>\n                <value>\n                    <array>\n                        <data>\n                            <value>\n                                <array>\n                                    <data>\n                                        <value>\n                                            <array>\n                                                <data>\n                                                    <value>\n                                                        <string>state</string>\n                                                    </value>\n                                                    <value>\n                                                        <string>=</string>\n                                                    </value>\n                                                    <value>\n                                                        <string>ready</string>\n                                                    </value>\n                                                </data>\n                                            </array>\n                                        </value>\n                                    </data>\n                                </array>\n                            </value>\n                        </data>\n                    </array>\n                </value>\n            </param>\n        </params>\n</methodCall >`;\n\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 820,
+        "y": 320,
+        "wires": [
+            [
+                "90a627eaac337e3f"
+            ]
+        ]
+    },
+    {
+        "id": "90a627eaac337e3f",
+        "type": "http request",
+        "z": "30867e3798952f1b",
+        "name": "Post WO ready",
+        "method": "POST",
+        "ret": "txt",
+        "paytoqs": "ignore",
+        "url": "odoo:8069/xmlrpc/2/object",
+        "tls": "",
+        "persist": false,
+        "proxy": "",
+        "insecureHTTPParser": true,
+        "authType": "",
+        "senderr": false,
+        "headers": [],
+        "x": 1040,
+        "y": 320,
+        "wires": [
+            [
+                "9a7d739ed2ef7312"
+            ]
+        ]
+    },
+    {
+        "id": "9a7d739ed2ef7312",
+        "type": "function",
+        "z": "30867e3798952f1b",
+        "name": "Extract WO id",
+        "func": "function extractProductIds(xmlString) {\n    const productIds = [];\n    const memberTag = '<member>\\n<name>production_id</name>';\n    const stringTag = '<string>';\n\n    let startIndex = 0;\n    while ((startIndex = xmlString.indexOf(memberTag, startIndex)) !== -1) {\n        const endIndex = xmlString.indexOf('</member>', startIndex);\n        if (endIndex === -1) {\n            break; // Invalid XML or malformed input\n        }\n\n        // Extract the substring containing the production_id member\n        const memberXml = xmlString.substring(startIndex, endIndex + '</member>'.length);\n\n        const intStartIndex = memberXml.indexOf(stringTag);\n        const intEndIndex = memberXml.indexOf('</string>', intStartIndex);\n        if (intStartIndex !== -1 && intEndIndex !== -1) {\n            const productId = memberXml.substring(intStartIndex + stringTag.length, intEndIndex).trim();\n            productIds.push(productId);\n        }\n\n        // Move the start index past the end of the current </member> tag\n        startIndex = endIndex + '</member>'.length;\n    }\n\n    return productIds;\n}\n\n// Extract all production_id values\nconst productIDs = extractProductIds(msg.payload);\n\nif (productIDs.length > 0) {\n    msg.payload = productIDs;\n}\n\nreturn msg;\n",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 180,
+        "y": 420,
+        "wires": [
+            [
+                "9739dc22a3ae76cf",
+                "2d3589e960116a10"
+            ]
+        ]
+    },
+    {
+        "id": "9739dc22a3ae76cf",
+        "type": "split",
+        "z": "30867e3798952f1b",
+        "name": "Split array",
+        "splt": "\\n",
+        "spltType": "str",
+        "arraySplt": 1,
+        "arraySpltType": "len",
+        "stream": false,
+        "addname": "",
+        "x": 480,
+        "y": 420,
+        "wires": [
+            [
+                "8b0a80293a58c063"
+            ]
+        ]
+    },
+    {
+        "id": "8b0a80293a58c063",
+        "type": "function",
+        "z": "30867e3798952f1b",
+        "name": "Filter PRODUCTION Details",
+        "func": "const production_id = msg.payload\n\nconst ODOO_DB = flow.get(\"ODOO_DB\");\nconst ODOO_UID = flow.get(\"ODOO_UID\");\nconst ODOO_PASSWORD = flow.get(\"ODOO_PASSWORD\");\n\nmsg.payload = `<methodCall>\n    <methodName>execute_kw</methodName>\n        <params>\n            <param>\n                <value>\n                    <string>${ODOO_DB}</string>\n                </value>\n            </param>\n            <param>\n                <value>\n                    <int>${ODOO_UID}</int>\n                </value>\n            </param>\n            <param>\n                <value>\n                    <string>${ODOO_PASSWORD}</string>\n                </value>\n            </param>\n            <param>\n                <value>\n                    <string>mrp.production</string>\n                </value>\n            </param>\n            <param>\n                <value>\n                    <string>search_read</string>\n                </value>\n            </param>\n            <param>\n                <value>\n                    <array>\n                        <data>\n                            <value>\n                                <array>\n                                    <data>\n                                        <value>\n                                            <array>\n                                                <data>\n                                                    <value>\n                                                        <string>name</string>\n                                                    </value>\n                                                    <value>\n                                                        <string>=</string>\n                                                    </value>\n                                                    <value>\n                                                        <string>${production_id}</string>\n                                                    </value>\n                                                </data>\n                                            </array>\n                                        </value>\n                                    </data>\n                                </array>\n                            </value>\n                        </data>\n                    </array>\n                </value>\n            </param>\n        </params>\n</methodCall >`;\n\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 780,
+        "y": 420,
+        "wires": [
+            [
+                "4e1a1b6b267a3a18"
+            ]
+        ]
+    },
+    {
+        "id": "0e5789f848c2223f",
+        "type": "function",
+        "z": "30867e3798952f1b",
+        "name": "EXTRACT PRODUCTION DETAILS",
+        "func": "function extractProductIds(xmlString) {\n    const productIds = 0;\n    const memberTag = '<member>\\n<name>bom_id</name>';\n    const stringTag = '<int>';\n\n    let startIndex = 0;\n    while ((startIndex = xmlString.indexOf(memberTag, startIndex)) !== -1) {\n        const endIndex = xmlString.indexOf('</member>', startIndex);\n        if (endIndex === -1) {\n            break; // Invalid XML or malformed input\n        }\n\n        // Extract the substring containing the production_id member\n        const memberXml = xmlString.substring(startIndex, endIndex + '</member>'.length);\n\n        const intStartIndex = memberXml.indexOf(stringTag);\n        const intEndIndex = memberXml.indexOf('</int>', intStartIndex);\n        if (intStartIndex !== -1 && intEndIndex !== -1) {\n            const productId = memberXml.substring(intStartIndex + stringTag.length, intEndIndex).trim();\n            return productId;\n        }\n\n        // Move the start index past the end of the current </member> tag\n        startIndex = endIndex + '</member>'.length;\n    }\n\n}\n\n// Extract all production_id values\nconst productIDs = extractProductIds(msg.payload);\n\nif (productIDs.length > 0) {\n    msg.payload = productIDs;\n}\n\nreturn msg;\n",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 1290,
+        "y": 420,
+        "wires": [
+            [
+                "2503f7dd2037ab9b",
+                "d5458d08305fccfb"
+            ]
+        ]
+    },
+    {
+        "id": "4e1a1b6b267a3a18",
+        "type": "http request",
+        "z": "30867e3798952f1b",
+        "name": "",
+        "method": "POST",
+        "ret": "txt",
+        "paytoqs": "ignore",
+        "url": "odoo:8069/xmlrpc/2/object",
+        "tls": "",
+        "persist": false,
+        "proxy": "",
+        "insecureHTTPParser": false,
+        "authType": "",
+        "senderr": false,
+        "headers": [],
+        "x": 1010,
+        "y": 420,
+        "wires": [
+            [
+                "0e5789f848c2223f"
+            ]
+        ]
+    },
+    {
+        "id": "2d3589e960116a10",
+        "type": "function",
+        "z": "30867e3798952f1b",
+        "name": "Save WO ID",
+        "func": "const payload2 = msg.payload;\n\n/*const newMsg = {\n    array: payload2\n};*/\n\nmsg.payload = payload2;\n\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 1230,
+        "y": 540,
+        "wires": [
+            [
+                "735d25db5f6dc8b9"
+            ]
+        ]
+    },
+    {
+        "id": "2503f7dd2037ab9b",
+        "type": "join",
+        "z": "30867e3798952f1b",
+        "name": "JOIN BOM_ID",
+        "mode": "auto",
+        "build": "merged",
+        "property": "payload",
+        "propertyType": "msg",
+        "key": "topic",
+        "joiner": "\\n",
+        "joinerType": "str",
+        "accumulate": false,
+        "timeout": "",
+        "count": "",
+        "reduceRight": false,
+        "reduceExp": "",
+        "reduceInit": "",
+        "reduceInitType": "num",
+        "reduceFixup": "",
+        "x": 1560,
+        "y": 460,
+        "wires": [
+            [
+                "735d25db5f6dc8b9"
+            ]
+        ]
+    },
+    {
+        "id": "73a131ba343b214f",
+        "type": "function",
+        "z": "30867e3798952f1b",
+        "name": "Array With WO BOM",
+        "func": "const array1 = msg.payload[0]; // Array com 'WH/MO/00015' e 'WH/MO/00016'\nconst array2 = msg.payload[1];    // Array com '11' e '14'\n\nconst combinedArray = [];\nfor (let i = 0; i < array1.length; i++) {\n    combinedArray.push({\n        WO: array1[i],\n        BOM: array2[i]\n    });\n}\n\n\nmsg.payload = combinedArray;\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 2280,
+        "y": 560,
+        "wires": [
+            [
+                "010304414ecfaead"
+            ]
+        ]
+    },
+    {
+        "id": "735d25db5f6dc8b9",
+        "type": "join",
+        "z": "30867e3798952f1b",
+        "name": "",
+        "mode": "custom",
+        "build": "array",
+        "property": "payload",
+        "propertyType": "msg",
+        "key": "topic",
+        "joiner": "\\n",
+        "joinerType": "str",
+        "accumulate": false,
+        "timeout": "",
+        "count": "2",
+        "reduceRight": false,
+        "reduceExp": "",
+        "reduceInit": "",
+        "reduceInitType": "",
+        "reduceFixup": "",
+        "x": 1730,
+        "y": 560,
+        "wires": [
+            [
+                "73a131ba343b214f"
+            ]
+        ]
+    },
+    {
+        "id": "d5458d08305fccfb",
+        "type": "function",
+        "z": "30867e3798952f1b",
+        "name": "FILTER BOM ID",
+        "func": "const bom_id = msg.payload\n\nconst ODOO_DB = flow.get(\"ODOO_DB\");\nconst ODOO_UID = flow.get(\"ODOO_UID\");\nconst ODOO_PASSWORD = flow.get(\"ODOO_PASSWORD\");\n\nmsg.payload = `<methodCall>\n    <methodName>execute_kw</methodName>\n        <params>\n            <param>\n                <value>\n                    <string>${ODOO_DB}</string>\n                </value>\n            </param>\n            <param>\n                <value>\n                    <int>${ODOO_UID}</int>\n                </value>\n            </param>\n            <param>\n                <value>\n                    <string>${ODOO_PASSWORD}</string>\n                </value>\n            </param>\n            <param>\n                <value>\n                    <string>mrp.bom.line</string>\n                </value>\n            </param>\n            <param>\n                <value>\n                    <string>search_read</string>\n                </value>\n            </param>\n            <param>\n                <value>\n                    <array>\n                        <data>\n                            <value>\n                                <array>\n                                    <data>\n                                        <value>\n                                            <array>\n                                                <data>\n                                                    <value>\n                                                        <string>bom_id</string>\n                                                    </value>\n                                                    <value>\n                                                        <string>=</string>\n                                                    </value>\n                                                    <value>\n                                                        <int>${bom_id}</int>\n                                                    </value>\n                                                </data>\n                                            </array>\n                                        </value>\n                                    </data>\n                                </array>\n                            </value>\n                        </data>\n                    </array>\n                </value>\n            </param>\n        </params>\n</methodCall >`;\n\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 1560,
+        "y": 380,
+        "wires": [
+            [
+                "b3f8ec7259290796"
+            ]
+        ]
+    },
+    {
+        "id": "b3f8ec7259290796",
+        "type": "http request",
+        "z": "30867e3798952f1b",
+        "name": "REQUEST GET COMPONENTS",
+        "method": "POST",
+        "ret": "txt",
+        "paytoqs": "ignore",
+        "url": "odoo:8069/xmlrpc/2/object",
+        "tls": "",
+        "persist": false,
+        "proxy": "",
+        "insecureHTTPParser": false,
+        "authType": "",
+        "senderr": false,
+        "headers": [],
+        "x": 1840,
+        "y": 380,
+        "wires": [
+            [
+                "51ef9a7cd828d6be"
+            ]
+        ]
+    },
+    {
+        "id": "51ef9a7cd828d6be",
+        "type": "function",
+        "z": "30867e3798952f1b",
+        "name": "EXTRACT PRODUCTION DETAILS",
+        "func": "function extractProductDetails(xmlString) {\n    const products = [];\n\n    let startIndex = 0;\n    while ((startIndex = xmlString.indexOf('<name>product_id</name>', startIndex)) !== -1) {\n        // Find the enclosing <value> tags for product_id\n        const startValueIndex = xmlString.indexOf('<data>', startIndex);\n        const endValueIndex = xmlString.indexOf('</data>', startValueIndex);\n\n        // Extract the substring containing the <value> tags for product_id\n        const valueXml = xmlString.substring(startValueIndex, endValueIndex + '</value>'.length);\n\n        // Find the <int> tags inside the <value> tags for product_id (ID and Name)\n        const idStartIndex = valueXml.indexOf('<value><int>');\n        const idEndIndex = valueXml.indexOf('</int></value>', idStartIndex);\n        const productId = valueXml.substring(idStartIndex + '<value><int>'.length, idEndIndex).trim();\n\n        // Find the <string> tags inside the <value> tags for product_id (Name)\n        const nameStartIndex = valueXml.indexOf('<value><string>');\n        const nameEndIndex = valueXml.indexOf('</string></value>', nameStartIndex);\n        const productName = valueXml.substring(nameStartIndex + '<value><string>'.length, nameEndIndex).trim();\n\n        // Push the extracted data into products array\n        products.push({ id: productId, name: productName });\n\n        // Move the startIndex past the end of the current </value> tag\n        startIndex = endValueIndex + '</value>'.length;\n    }\n\n    return products;\n}\nconst productIds = extractProductDetails(msg.payload);\n\nif (productIds.length > 0) {\n    msg.payload = productIds;\n}\nreturn msg",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 2250,
+        "y": 380,
+        "wires": [
+            [
+                "ea63788291fadd88"
+            ]
+        ]
+    },
+    {
+        "id": "010304414ecfaead",
+        "type": "join",
+        "z": "30867e3798952f1b",
+        "name": "",
+        "mode": "custom",
+        "build": "array",
+        "property": "payload",
+        "propertyType": "msg",
+        "key": "topic",
+        "joiner": "\\n",
+        "joinerType": "str",
+        "accumulate": false,
+        "timeout": "",
+        "count": "2",
+        "reduceRight": false,
+        "reduceExp": "",
+        "reduceInit": "",
+        "reduceInitType": "",
+        "reduceFixup": "",
+        "x": 2850,
+        "y": 500,
+        "wires": [
+            [
+                "74fd06d74466f2ef"
+            ]
+        ]
+    },
+    {
+        "id": "ea63788291fadd88",
+        "type": "join",
+        "z": "30867e3798952f1b",
+        "name": "JOIN PRODUCTION DETAILS",
+        "mode": "auto",
+        "build": "object",
+        "property": "payload",
+        "propertyType": "msg",
+        "key": "topic",
+        "joiner": "\\n",
+        "joinerType": "str",
+        "useparts": true,
+        "accumulate": true,
+        "timeout": "",
+        "count": "",
+        "reduceRight": false,
+        "reduceExp": "",
+        "reduceInit": "",
+        "reduceInitType": "",
+        "reduceFixup": "",
+        "x": 2570,
+        "y": 400,
+        "wires": [
+            [
+                "010304414ecfaead"
+            ]
+        ]
+    },
+    {
+        "id": "74fd06d74466f2ef",
+        "type": "function",
+        "z": "30867e3798952f1b",
+        "name": "Array With ALL",
+        "func": "const array1 = msg.payload[0]; // Array com 'WH/MO/00015' e 'WH/MO/00016'\nconst array2 = msg.payload[1];    // Array com '11' e '14'\n\nconst combinedArray = [];\nfor (let i = 0; i < array1.length; i++) {\n    combinedArray.push({\n        WO: array1[i][\"WO\"],\n        BOM: array1[i][\"BOM\"],\n        COMPONENTS: array2[i]\n    });\n}\n\n\nmsg.payload = combinedArray;\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 3040,
+        "y": 500,
+        "wires": [
+            [
+                "cc999f3e900552b1"
+            ]
+        ]
+    },
+    {
+        "id": "cc999f3e900552b1",
+        "type": "debug",
+        "z": "30867e3798952f1b",
+        "name": "Final Result",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "payload",
+        "targetType": "msg",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 3300,
+        "y": 460,
+        "wires": []
+    },
+    {
+        "id": "16577223ed5a6737",
+        "type": "function",
+        "z": "30867e3798952f1b",
+        "name": "Extract UID",
+        "func": "// Extract user ID from XML response\nconst extractUID = (xmlString) => {\n    const match = /<int>(\\d+)<\\/int>/.exec(xmlString);\n    if (match && match[1]) {\n        return parseInt(match[1]);\n    }\n    return null;\n};\n\nconst uid = extractUID(msg.payload);\n\nif (uid) {\n    // Store UID for later use\n    flow.set(\"ODOO_UID\", uid);\n    node.status({fill: \"green\", shape: \"dot\", text: `Logged in as UID: ${uid}`});\n    return msg;\n} else {\n    node.status({fill: \"red\", shape: \"ring\", text: \"Login failed\"});\n    node.error(\"Failed to extract UID from response\", msg);\n    return null;\n}",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 750,
+        "y": 240,
+        "wires": [
+            [
+                "a7d6d25c079d5160"
+            ]
+        ]
+    }
+]

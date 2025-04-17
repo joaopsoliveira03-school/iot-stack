@@ -1,0 +1,3 @@
+[submodule "mei-iot"]
+	path = mei-iot
+	url = git@github.com:joaopsoliveira03/mei-iot.git
